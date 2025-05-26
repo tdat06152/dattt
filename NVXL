@@ -1,149 +1,447 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <title>Workflow with Video Preview & Popup</title>
-  <script type="module">
-    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-    mermaid.initialize({ startOnLoad: true });
-  </script>
-  <style>
-    .mermaid {
-      background-color: #f9f9f9;
-      padding: 20px;
-      border-radius: 8px;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Tương Tác</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
 
-    .video-preview {
-      position: absolute;
-      display: none;
-      z-index: 10;
-      width: 320px;
-      height: 180px;
-      border: 2px solid #ccc;
-      background-color: #000;
-    }
+        .workflow-container {
+            position: relative;
+            width: 100%;
+            max-width: 1200px; /* Điều chỉnh kích thước tổng thể */
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            display: grid;
+            /* Cần điều chỉnh grid-template-columns và grid-template-rows rất nhiều
+               để phù hợp với bố cục sơ đồ của bạn.
+               Ví dụ này chỉ là minh họa. */
+            grid-template-columns: repeat(5, 1fr); /* Giả định 5 cột cho dễ bố cục ban đầu */
+            grid-template-rows: repeat(7, auto); /* Giả định 7 hàng */
+            gap: 20px 10px; /* Khoảng cách giữa các ô */
+            position: relative; /* Để các mũi tên và nhãn có thể absolute */
+        }
 
-    .video-preview iframe {
-      width: 100%;
-      height: 100%;
-    }
+        .workflow-step {
+            border: 1px solid #333;
+            padding: 15px;
+            text-align: center;
+            background-color: #e0e0e0;
+            cursor: pointer;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+            border-radius: 5px;
+            position: relative;
+            min-height: 80px; /* Chiều cao tối thiểu cho các ô */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.9em;
+            line-height: 1.2;
+        }
 
-    .video-popup {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw; height: 100vh;
-      background-color: rgba(0,0,0,0.7);
-      z-index: 999;
-      justify-content: center;
-      align-items: center;
-    }
+        .workflow-step h3 {
+            margin: 0;
+            font-size: 1em;
+            word-break: break-word; /* Ngắt chữ dài */
+        }
 
-    .video-popup iframe {
-      width: 800px;
-      height: 450px;
-      border: none;
-    }
+        /* Kiểu cho ô quyết định (hình thoi) */
+        .workflow-step.decision {
+            background-color: #d0e0ff;
+            transform: rotate(45deg);
+            width: 100px; /* Kích thước cơ bản cho hình thoi */
+            height: 100px;
+            padding: 0; /* Loại bỏ padding để không ảnh hưởng đến kích thước xoay */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-    .video-popup .close-btn {
-      position: absolute;
-      top: 20px;
-      right: 40px;
-      font-size: 30px;
-      color: white;
-      cursor: pointer;
-    }
-  </style>
+        .workflow-step.decision h3 {
+            transform: rotate(-45deg); /* Xoay ngược chữ */
+            font-size: 0.85em; /* Kích thước chữ nhỏ hơn cho hình thoi */
+            padding: 10px; /* Thêm padding cho chữ bên trong hình thoi */
+        }
+
+        /* Định vị các ô theo sơ đồ (Grid area hoặc line numbers) */
+        /* Cần điều chỉnh rất nhiều để khớp chính xác sơ đồ của bạn */
+        #step1 { grid-area: 1 / 3 / 2 / 4; } /* Bắt đầu công việc */
+        #step2 { grid-area: 2 / 3 / 3 / 4; } /* Nhận kiến thức chuyên */
+        #step3 { grid-area: 4 / 3 / 5 / 4; } /* Rà soát */
+        #step4 { grid-area: 5 / 1 / 6 / 2; } /* Cập nhật thông tin */
+        #step5 { grid-area: 5 / 3 / 6 / 4; } /* Phân hàng và tạo chuyến */
+        #step6 { grid-area: 5 / 4 / 6 / 5; } /* Bàn giao hàng hoá */
+        #step7 { grid-area: 5 / 5 / 6 / 6; } /* Xử lý thông tin/vấn đề phát sinh */
+        #step8 { grid-area: 6 / 5 / 7 / 6; } /* Nhận hàng hoàn giờ */
+        #step9 { grid-area: 7 / 5 / 8 / 6; } /* Thu tiền và tạo phiếu thu */
+        #step10 { grid-area: 8 / 4 / 9 / 5; } /* Phân loại và tạo phiếu luân chuyển */
+        #step11 { grid-area: 8 / 3 / 9 / 4; } /* Kiểm kho */
+        #step12 { grid-area: 8 / 1 / 9 / 2; } /* Kiểm đếm và nộp tiền */
+        #step13 { grid-area: 9 / 1 / 10 / 2; } /* Lưu trữ thông tin */
+
+        /* Ô đặc biệt "Lập biên bản sự cố" */
+        #lap-bien-ban { grid-area: 3 / 4 / 4 / 5; background-color: #ffcccc; }
+
+        /* Các ô thông báo */
+        #thong-tin-quan-ly-qlrr { grid-area: 5 / 6 / 6 / 7; font-size: 0.8em; }
+        #thong-tin-quan-ly-qlrr-2 { grid-area: 7 / 6 / 8 / 7; font-size: 0.8em; }
+        #thong-bao-thong-tin-den-ke-toan { grid-area: 9 / 2 / 10 / 3; font-size: 0.8em; }
+
+
+        /* Các đường nối và nhãn "Yes/No" (sẽ phức tạp) */
+        /* Đây là một ví dụ rất đơn giản, bạn sẽ cần thêm rất nhiều pseudo-elements hoặc div */
+        .arrow-label {
+            position: absolute;
+            font-weight: bold;
+            color: #555;
+            font-size: 0.8em;
+            background-color: #fff;
+            padding: 0 5px;
+            border-radius: 3px;
+        }
+
+        /* Ví dụ label cho step2 (decision) */
+        #step2 + .arrow-label.yes {
+            top: 100%; /* Dưới ô */
+            left: 50%;
+            transform: translateX(-50%);
+            margin-top: 5px;
+        }
+        #step2 + .arrow-label.no {
+            left: 100%; /* Bên phải ô */
+            top: 50%;
+            transform: translateY(-50%);
+            margin-left: 5px;
+        }
+        /* Cần tạo rất nhiều quy tắc CSS cho các mũi tên và nhãn khác */
+
+        /* Video Preview Popup (nhỏ) */
+        .video-preview {
+            display: none;
+            position: absolute;
+            top: 100%; /* Xuất hiện bên dưới ô */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            padding: 5px;
+            border-radius: 5px;
+            width: 160px; /* Kích thước nhỏ cho preview */
+            height: 100px;
+            overflow: hidden; /* Ẩn phần thừa của iframe */
+            pointer-events: none; /* Không chặn sự kiện chuột trên ô */
+        }
+
+        .workflow-step:hover .video-preview {
+            display: block;
+        }
+
+        .video-preview iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Modal cho video lớn */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 800px;
+            border-radius: 8px;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 30px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            cursor: pointer;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #000;
+            text-decoration: none;
+        }
+
+        .video-player-large {
+            width: 100%;
+            height: 450px; /* Kích thước lớn cho video pop-up */
+            border: none;
+        }
+
+        .modal-description {
+            margin-top: 15px;
+            font-size: 1.1em;
+            color: #333;
+        }
+    </style>
 </head>
 <body>
-  <div class="mermaid" id="workflow">
-    graph TD
-      A1([1. Bắt đầu công việc]) --> A2([2. Nhận kiện luân chuyển])
-      A2 -->|No| A2a([Lập biên bản sự cố<br>(nếu chênh lệch)]) --> A3
-      A2 -->|Yes| A3([3. Rã kiện])
-      A3 --> A4([4. Cập nhật thông tin<br>hệ thống và xử lý sự cố])
-      A4 --> A5([5. Phân hàng và tạo chuyển đi cho NVPTTT/CTV])
-      A5 --> A6([6. Bàn giao hàng hóa cho NVPTTT/CTV])
-      A6 --> A7([7. Xử lý thông tin/sản phẩm phát sinh])
-      A7 -->|Yes| A8([8. Nhận hàng hoàn bàn giao])
-      A8 -->|Yes| A9([9. Thu tiền và tạo phiếu thu])
-      A9 -->|Yes| A10([10. Phân loại và tạo phiếu luân chuyển])
-      A10 --> A11([11. Kiểm kho])
-      A11 --> A12([12. Kiểm đếm và nộp tiền])
-      A12 -->|Yes| A13([13. Lưu trữ thông tin và chứng từ])
-      A12 -->|No| A12a([Thông báo thông tin đến Kế toán<br>(nếu có chênh lệch)])
-      A7 -->|No| A7a([Thông tin đến Quản lý tạo phiếu QLRR trên HRW])
-      A8 -->|No| A8a([Thông tin đến Quản lý tạo phiếu QLRR trên HRW])
-  </div>
 
-  <!-- Hover preview -->
-  <div class="video-preview" id="previewBox">
-    <iframe id="previewVideo" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-  </div>
+    <div class="workflow-container">
+        <div class="workflow-step" id="step1">
+            <h3>1. Bắt đầu công việc</h3>
+            <div class="video-preview"><iframe src="" frameborder="0" allowfullscreen></iframe></div>
+        </div>
 
-  <!-- Click popup -->
-  <div class="video-popup" id="popupBox">
-    <span class="close-btn" onclick="closePopup()">&times;</span>
-    <iframe id="popupVideo" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-  </div>
+        <div class="workflow-step decision" id="step2">
+            <h3>2. Nhận kiến thức chuyên</h3>
+            <div class="video-preview"><iframe src="" frameborder="0" allowfullscreen></iframe></div>
+        </div>
+        <div class="arrow-label yes" style="grid-area: 3 / 3 / 4 / 4; text-align: left; transform: translate(-50%, -50%); top: 50%;">Yes</div>
+        <div class="arrow-label no" style="grid-area: 3 / 3 / 4 / 4; text-align: right; transform: translate(50%, -50%); top: 50%;">No</div>
 
-  <script>
-    // Mapping node IDs to video links
-    const videoLinks = {
-      A1: "https://drive.google.com/file/d//preview",
-      A2: "https://drive.google.com/file/d/your-file-id-2/preview",
-      A3: "https://drive.google.com/file/d/your-file-id-3/preview",
-      A4: "https://drive.google.com/file/d/your-file-id-4/preview",
-      A5: "https://drive.google.com/file/d/your-file-id-5/preview",
-      A6: "https://drive.google.com/file/d/your-file-id-6/preview",
-      A7: "https://drive.google.com/file/d/your-file-id-7/preview",
-      A8: "https://drive.google.com/file/d/your-file-id-8/preview",
-      A9: "https://drive.google.com/file/d/your-file-id-9/preview",
-      A10: "https://drive.google.com/file/d/your-file-id-10/preview",
-      A11: "https://drive.google.com/file/d/your-file-id-11/preview",
-      A12: "https://drive.google.com/file/d/your-file-id-12/preview",
-      A13: "https://drive.google.com/file/d/your-file-id-13/preview"
-    };
 
-    const previewBox = document.getElementById('previewBox');
-    const previewVideo = document.getElementById('previewVideo');
-    const popupBox = document.getElementById('popupBox');
-    const popupVideo = document.getElementById('popupVideo');
+        <div class="workflow-step" id="lap-bien-ban">
+            <h3>Lập biên bản sự cố (nếu chênh lệch)</h3>
+            <div class="video-preview"><iframe src="" frameborder="0" allowfullscreen></iframe></div>
+        </div>
 
-    function closePopup() {
-      popupBox.style.display = "none";
-      popupVideo.src = "";
-    }
+        <div class="workflow-step" id="step3">
+            <h3>3. Rà soát</h3>
+            <div class="video-preview"><iframe src="" frameborder="0" allowfullscreen></iframe></div>
+        </div>
 
-    setTimeout(() => {
-      for (const id in videoLinks) {
-        const el = document.querySelector(`#workflow [id*="${id}"]`);
-        if (el) {
-          // Hover: preview small video
-          el.addEventListener("mouseenter", (e) => {
-            previewVideo.src = videoLinks[id];
-            previewBox.style.display = "block";
-            previewBox.style.left = e.pageX + 20 + "px";
-            previewBox.style.top = e.pageY - 100 + "px";
-          });
-          el.addEventListener("mousemove", (e) => {
-            previewBox.style.left = e.pageX + 20 + "px";
-            previewBox.style.top = e.pageY - 100 + "px";
-          });
-          el.addEventListener("mouseleave", () => {
-            previewBox.style.display = "none";
-            previewVideo.src = "";
-          });
+        <div class="workflow-step" id="step4">
+            <h3>4. Cập nhật thông tin trên hệ thống và xử lý sự cố (nếu có)</h3>
+            <div class="video-preview"><iframe src="" frameborder="0" allowfullscreen></iframe></div>
+        </div>
 
-          // Click: open popup video
-          el.addEventListener("click", () => {
-            popupVideo.src = videoLinks[id];
-            popupBox.style.display = "flex";
-          });
-        }
-      }
-    }, 1000);
-  </script>
+        <div class="workflow-step" id="step5">
+            <h3>5. Phân hàng và tạo chuyến đi cho NVPTTT/CTV</h3>
+            <div class="video-preview"><iframe src="" frameborder="0" allowfullscreen></iframe></div>
+        </div>
+
+        <div class="workflow-step" id="step6">
+            <h3>6. Bàn giao hàng hoá cho NVPTTT/CTV</h3>
+            <div class="video-preview"><iframe src="" frameborder="0" allowfullscreen></iframe></div>
+        </div>
+
+        <div class="workflow-step" id="step7">
+            <h3>7. Xử lý thông tin/vấn đề phát sinh</h3>
+            <div class="video-preview"><iframe src="" frameborder="0" allowfullscreen></iframe></div>
+        </div>
+
+        <div class="workflow-step-info" id="thong-tin-quan-ly-qlrr">
+            <p>Thông tin đến Quản lý đủ tạo phiếu QLRR trên HEW (nếu chênh lệch)</p>
+        </div>
+
+
+        <div class="workflow-step decision" id="step8">
+            <h3>8. Nhận hàng hoàn giờ</h3>
+            <div class="video-preview"><iframe src="" frameborder="0" allowfullscreen></iframe></div>
+        </div>
+
+        <div class="workflow-step" id="step9">
+            <h3>9. Thu tiền và tạo phiếu thu</h3>
+            <div class="video-preview"><iframe src="" frameborder="0" allowfullscreen></iframe></div>
+        </div>
+
+        <div class="workflow-step-info" id="thong-tin-quan-ly-qlrr-2">
+            <p>Thông tin đến Quản lý để tạo phiếu QLRR trên HEW (nếu chênh lệch)</p>
+        </div>
+
+        <div class="workflow-step" id="step10">
+            <h3>10. Phân loại và tạo phiếu luân chuyển</h3>
+            <div class="video-preview"><iframe src="" frameborder="0" allowfullscreen></iframe></div>
+        </div>
+
+        <div class="workflow-step" id="step11">
+            <h3>11. Kiểm kho</h3>
+            <div class="video-preview"><iframe src="" frameborder="0" allowfullscreen></iframe></div>
+        </div>
+
+        <div class="workflow-step" id="step12">
+            <h3>12. Kiểm đếm và nộp tiền</h3>
+            <div class="video-preview"><iframe src="" frameborder="0" allowfullscreen></iframe></div>
+        </div>
+
+        <div class="workflow-step-info" id="thong-bao-thong-tin-den-ke-toan">
+            <p>Thông báo thông tin đến Kế toán (nếu có chênh lệch)</p>
+        </div>
+
+        <div class="workflow-step" id="step13">
+            <h3>13. Lưu trữ thông tin và chứng từ</h3>
+            <div class="video-preview"><iframe src="" frameborder="0" allowfullscreen></iframe></div>
+        </div>
+
+        <div style="position: absolute; background-color: #333; height: 50px; width: 2px; top: 200px; left: 50%; transform: translateX(-50%);"></div>
+        </div>
+
+    <div id="videoModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <iframe id="videoPlayerLarge" class="video-player-large" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            <div id="modalDescription" class="modal-description"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const workflowSteps = document.querySelectorAll('.workflow-step');
+            const videoModal = document.getElementById('videoModal');
+            const videoPlayerLarge = document.getElementById('videoPlayerLarge');
+            const modalDescription = document.getElementById('modalDescription');
+            const closeButton = document.querySelector('.close-button');
+
+            // Dữ liệu video (liên kết Google Drive) cho từng bước
+            // THAY THẾ 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE' BẰNG LINK THỰC TẾ CỦA BẠN
+            const videoData = {
+                'step1': {
+                    previewUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE', // Link embed cho preview (thường là link embed giống link full)
+                    fullUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE', // Link embed cho pop-up
+                    description: 'Video giới thiệu bước "Bắt đầu công việc".'
+                },
+                'step2': {
+                    previewUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    fullUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    description: 'Video hướng dẫn "Nhận kiến thức chuyên".'
+                },
+                'lap-bien-ban': {
+                    previewUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    fullUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    description: 'Video hướng dẫn "Lập biên bản sự cố".'
+                },
+                'step3': {
+                    previewUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    fullUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    description: 'Video chi tiết về bước "Rà soát".'
+                },
+                'step4': {
+                    previewUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    fullUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    description: 'Video về "Cập nhật thông tin và xử lý sự cố".'
+                },
+                'step5': {
+                    previewUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    fullUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    description: 'Video về "Phân hàng và tạo chuyến đi".'
+                },
+                'step6': {
+                    previewUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    fullUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    description: 'Video về "Bàn giao hàng hoá".'
+                },
+                'step7': {
+                    previewUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    fullUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    description: 'Video về "Xử lý thông tin/vấn đề phát sinh".'
+                },
+                'step8': {
+                    previewUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    fullUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    description: 'Video về "Nhận hàng hoàn giờ".'
+                },
+                'step9': {
+                    previewUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    fullUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    description: 'Video về "Thu tiền và tạo phiếu thu".'
+                },
+                'step10': {
+                    previewUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    fullUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    description: 'Video về "Phân loại và tạo phiếu luân chuyển".'
+                },
+                'step11': {
+                    previewUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    fullUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    description: 'Video về "Kiểm kho".'
+                },
+                'step12': {
+                    previewUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    fullUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    description: 'Video về "Kiểm đếm và nộp tiền".'
+                },
+                'step13': {
+                    previewUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    fullUrl: 'YOUR_GOOGLE_DRIVE_EMBED_LINK_HERE',
+                    description: 'Video về "Lưu trữ thông tin và chứng từ".'
+                },
+                // Các ô thông báo không có video tương tác trực tiếp
+                // 'thong-tin-quan-ly-qlrr': { /* Không có video */ },
+                // 'thong-tin-quan-ly-qlrr-2': { /* Không có video */ },
+                // 'thong-bao-thong-tin-den-ke-toan': { /* Không có video */ }
+            };
+
+            workflowSteps.forEach(step => {
+                const stepId = step.id;
+                const videoPreviewIframe = step.querySelector('.video-preview iframe');
+
+                // Thêm sự kiện hover cho preview
+                if (videoData[stepId] && videoData[stepId].previewUrl) {
+                    step.addEventListener('mouseenter', () => {
+                        videoPreviewIframe.src = videoData[stepId].previewUrl;
+                    });
+                    step.addEventListener('mouseleave', () => {
+                        videoPreviewIframe.src = ''; // Dừng preview khi rời chuột
+                    });
+                }
+
+                // Thêm sự kiện click để mở pop-up video
+                step.addEventListener('click', () => {
+                    if (videoData[stepId] && videoData[stepId].fullUrl) {
+                        videoPlayerLarge.src = videoData[stepId].fullUrl;
+                        modalDescription.textContent = videoData[stepId].description;
+                        videoModal.style.display = 'flex'; // Hiển thị modal
+                    } else if (step.classList.contains('workflow-step')) { // Chỉ báo cho các ô có thể tương tác
+                        alert('Chưa có video cho bước này.');
+                    }
+                });
+            });
+
+            // Đóng modal khi click nút đóng
+            closeButton.addEventListener('click', () => {
+                videoModal.style.display = 'none';
+                videoPlayerLarge.src = ''; // Dừng video khi đóng modal
+            });
+
+            // Đóng modal khi click ra ngoài nội dung modal
+            window.addEventListener('click', (event) => {
+                if (event.target == videoModal) {
+                    videoModal.style.display = 'none';
+                    videoPlayerLarge.src = ''; // Dừng video khi đóng modal
+                }
+            });
+        });
+    </script>
 </body>
 </html>
